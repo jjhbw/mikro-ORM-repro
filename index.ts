@@ -1,4 +1,11 @@
-import { Entity, ManyToOne, MikroORM, PrimaryKey, Property } from "@mikro-orm/core"
+import { Entity, Embeddable, Embedded, MikroORM, PrimaryKey, Property, JsonType } from "@mikro-orm/core"
+
+
+@Embeddable()
+class Address {
+    @Property({ type: JsonType })
+    lines!: { line: string }[]
+}
 
 @Entity()
 class Author {
@@ -7,25 +14,19 @@ class Author {
 
     @Property({ type: 'varchar' })
     name!: string
-}
 
-@Entity()
-class Book {
-    @PrimaryKey()
-    id!: number
+    @Property({ type: JsonType })
+    random_prop!: { nested: string }[]
 
-    @Property({ type: 'varchar' })
-    name!: string
-
-    @ManyToOne(() => Author, { nullable: false, eager: true })
-    author!: Author
+    @Embedded(() => Address)
+    address!: Address
 }
 
 const test = async () => {
     const connection = await MikroORM.init({
         entities: [
             Author,
-            Book
+            Address
         ],
         dbName: ':memory:',
         type: 'sqlite',
@@ -40,6 +41,17 @@ const test = async () => {
 
     const generator = connection.getSchemaGenerator()
     await generator.updateSchema()
+
+    const author = connection.em.create(Author, {
+        name: 'john',
+        random_prop: [{ nested: 'something' }],
+        address: { lines: [{ line: 'abcdefg' }] }
+    })
+    await connection.em.persistAndFlush(author)
+
+    connection.em.clear()
+
+    console.log(await connection.em.findOne(Author, 1))
 }
 
 test().catch(console.log)
