@@ -1,32 +1,15 @@
-import { Entity, Embeddable, Embedded, MikroORM, PrimaryKey, Property, JsonType } from "@mikro-orm/core"
+import { MikroORM } from "@mikro-orm/core"
+import { Book } from "./Book"
+import { Author } from "./Author"
+import { Page } from "./Page"
 
-
-@Embeddable()
-class Address {
-    @Property({ type: JsonType })
-    lines!: { line: string }[]
-}
-
-@Entity()
-class Author {
-    @PrimaryKey()
-    id!: number
-
-    @Property({ type: 'varchar' })
-    name!: string
-
-    @Property({ type: JsonType })
-    random_prop!: { nested: string }[]
-
-    @Embedded(() => Address)
-    address!: Address
-}
 
 const test = async () => {
     const connection = await MikroORM.init({
         entities: [
             Author,
-            Address
+            Book,
+            Page,
         ],
         dbName: ':memory:',
         type: 'sqlite',
@@ -42,16 +25,33 @@ const test = async () => {
     const generator = connection.getSchemaGenerator()
     await generator.updateSchema()
 
-    const author = connection.em.create(Author, {
-        name: 'john',
-        random_prop: [{ nested: 'something' }],
-        address: { lines: [{ line: 'abcdefg' }] }
-    })
-    await connection.em.persistAndFlush(author)
+    const author = new Author()
+    author.name = 'John'
 
+    const page = new Page()
+    page.text = 'new phone who dis'
+
+    const book = new Book()
+    book.pages.set([page])
+    author.books.set([book])
+
+    await connection.em.persistAndFlush(author)
     connection.em.clear()
 
-    console.log(await connection.em.findOne(Author, 1))
+    {
+        const author = await connection.em.findOneOrFail(Author, 1)
+        const book = new Book()
+        const old_page = author.books.getItems()[0].pages.getItems()
+        book.pages.set(old_page)
+        author.books.set([book])
+        await connection.em.persistAndFlush(author)
+        connection.em.clear()        
+    }
+
+    {
+        const author = await connection.em.findOneOrFail(Author, 1)
+        if (author.books[0].pages.length !== 1) throw new Error(`Unexpected number of pages: ${author.books[0].pages.length}`)
+    }
 }
 
 test().catch(console.log)
