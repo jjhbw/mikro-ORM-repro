@@ -35,22 +35,28 @@ const test = async () => {
     book.pages.set([page])
     author.books.set([book])
 
-    await connection.em.persistAndFlush(author)
-    connection.em.clear()
+    const em = connection.em.fork()
+
+    await em.persistAndFlush(author)
+    em.clear()
 
     {
-        const author = await connection.em.findOneOrFail(Author, 1)
+        const author = await em.findOneOrFail(Author, 1)
         const book = new Book()
         const old_page = author.books.getItems()[0].pages.getItems()
         book.pages.set(old_page)
         author.books.set([book])
-        await connection.em.persistAndFlush(author)
-        connection.em.clear()        
+        await em.persistAndFlush(author)
+        em.clear()
     }
 
     {
-        const author = await connection.em.findOneOrFail(Author, 1)
-        if (author.books[0].pages.length !== 1) throw new Error(`Unexpected number of pages: ${author.books[0].pages.length}`)
+        const author = await em.findOneOrFail(Author, 1)
+        if (author.books[0].pages.length !== 1) {
+            throw new Error(`Unexpected number of pages: ${author.books[0].pages.length}`)
+        } else {
+            console.log("success!")
+        }
     }
 }
 
