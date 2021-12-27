@@ -10,8 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@mikro-orm/core": "^4.5.10",
-    "@mikro-orm/sqlite": "^4.5.10",
+    "@mikro-orm/core": "^5.0.0-dev.593",
+    "@mikro-orm/sqlite": "^5.0.0-dev.593",
     "ts-node": "^9.1.1",
     "typescript": "^4.5.4"
   }
