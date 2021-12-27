@@ -3,8 +3,8 @@ import { Book } from "./Book"
 import { Author } from "./Author"
 import { Page } from "./Page"
 
-
-const test = async () => {
+// https://github.com/mikro-orm/mikro-orm/issues/1126
+const testFor1126 = async () => {
     const connection = await MikroORM.init({
         entities: [
             Author,
@@ -60,4 +60,4 @@ const test = async () => {
     }
 }
 
-test().catch(console.log)
+testFor1126().catch(console.log)
